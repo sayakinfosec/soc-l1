@@ -25,24 +25,24 @@ ELK components work together to collect, normalize, index, and visualize logs fr
 
 ---
 
-### 4. ELK Components
+### 4. ELK Components 🔥
 
-#### 4.1 Beats  
+#### 4.1 Beats  (Data Collection Agents)
 Lightweight agents (data shippers) that send log data from endpoints to Elasticsearch.  
 Examples: Winlogbeat, Filebeat, Packetbeat, Metricbeat, etc.
 
-#### 4.2 Logstash  
+#### 4.2 Logstash  (Data Input/ Filter/ Process & Output)
 A data processing engine. Configuration consists of:
 
 - **Input** - Log source  
 - **Filter** - Parsing/normalization  
 - **Output** - Send processed data to Elasticsearch, Kibana, ports, or files  
 
-#### 4.3 Elasticsearch  
+#### 4.3 Elasticsearch  (Index & Store Data)
 A full-text search & analytics engine storing JSON documents.  
 Supports RESTful API interactions.
 
-#### 4.4 Kibana  
+#### 4.4 Kibana  (Analysis & Visualization)
 A web-based interface for analysis, investigation, dashboards, and visualization.
 
 #### 4.5 How ELK Works Together
