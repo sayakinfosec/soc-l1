@@ -1,4 +1,4 @@
-## **Summit **
+## **Summit**
 
 *A Complete Walkthrough & Pyramid of Pain Practical Implementation*
 
