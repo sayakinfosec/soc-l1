@@ -60,7 +60,7 @@ v=DKIM1; k=rsa; p=<public_key>
 
 ### 4. Domain-Based Message Authentication, Reporting & Conformance (DMARC)
 
-**Definition:** DMARC ties SPF and DKIM results together to enforce sender authenticity.
+**Definition:** DMARC, an open-source standard, ties SPF and DKIM results together to enforce sender authenticity.
 
 **Sample DMARC Record:**
 
