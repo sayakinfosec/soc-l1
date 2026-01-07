@@ -80,4 +80,98 @@ Port **68** generated UDP traffic **without corresponding ICMP Type 3 Code 3 res
 
 ---
 
+### ARP Poisoning / Spoofing (Man-In-The-Middle)
+
+ARP (Address Resolution Protocol) maps IP addresses to MAC addresses on a local network. ARP poisoning (also known as ARP spoofing or MITM attack) exploits the lack of authentication in ARP by sending malicious ARP packets to manipulate IP-to-MAC mappings. The attacker positions themselves between the victim and the gateway to intercept traffic.
+
+Key ARP characteristics:
+- Works only on the local network
+- Used for MAC-to-IP resolution
+- Not secure and not routable
+- No authentication mechanism
+- Common packet types: request, response, gratuitous ARP
+
+Basic ARP investigation filter:
+`arp`
+
+Useful ARP filters for detection:
+- ARP requests: `arp.opcode == 1`
+- ARP replies: `arp.opcode == 2`
+- ARP scanning activity:
+  `((arp) && (arp.opcode == 1)) && (arp.src.hw_mac == <target-mac>)`
+- Possible ARP poisoning indicators:
+  `arp.duplicate-address-detected`
+  `arp.duplicate-address-frame`
+- Suspicious destination MAC:
+  `arp.dst.hw_mac == 00:00:00:00:00:00`
+
+A suspicious ARP condition occurs when multiple MAC addresses claim ownership of the same IP address. Wireshark flags this as a duplicate address, but analysts must determine which packet is malicious by correlating timing, frequency, and network roles (gateway vs host).
+
+Traffic analysis revealed a MAC address ending in **b4** repeatedly crafting ARP requests and responses:
+- Legitimate ownership: MAC **b4** → IP **192.168.1.25**
+- Spoofed claim: MAC **b4** also claimed **192.168.1.1** (likely gateway)
+- Multiple ARP requests targeting a range of IPs indicated ARP flooding
+
+This behavior confirms both **ARP spoofing** and **ARP flooding** attempts originating from the same host.
+
+Further inspection of HTTP traffic initially appeared normal at the IP layer. After adding MAC address columns, all HTTP packets destined for the victim were observed flowing through the MAC ending in **b4**, confirming a successful MITM attack.
+
+Final role identification:
+- Attacker: MAC **00:0c:29:e2:18:b4** → IP **192.168.1.25**
+- Gateway: MAC **50:78:b3:f3:cd:f4** → IP **192.168.1.1**
+- Victim: MAC **00:0c:29:98:c7:a8** → IP **192.168.1.12**
+
+This demonstrates how ARP poisoning enables traffic interception without altering IP-level communication, highlighting the importance of MAC-level inspection during investigations.
+
+
+Exercise findings (ARP Exercise pcap):
+
+Q. What is the number of ARP requests crafted by the attacker?
+
+The following filter was used to isolate ARP requests sent by the attacker:
+`arp.opcode == 1 && eth.src == 00:0c:29:e2:18:b4`
+
+- `arp.opcode == 1` filters ARP request packets
+- `eth.src == 00:0c:29:e2:18:b4` limits results to the attacker’s MAC address
+
+This query revealed **284 ARP requests** crafted by the attacker.
+
+Q. What is the number of HTTP packets received by the attacker?
+
+HTTP traffic destined for the attacker was identified using:
+`http && eth.dst == 00:0c:29:e2:18:b4`
+
+- `http` filters cleartext HTTP traffic
+- `eth.dst` confirms packets forwarded to the attacker’s MAC during MITM
+
+This query returned **90 HTTP packets** received by the attacker.
+
+Q. What is the number of sniffed username and password entries?
+
+Credential-related HTTP payloads were filtered using:
+`http contains uname`
+
+- `contains` performs a case-sensitive string search
+- `uname` matches username fields observed in HTTP form submissions
+
+This revealed **6 username and password entries**.
+
+Q. What is the password of "Client986"?
+
+Client-specific HTTP traffic was identified using:
+`http matches client986`
+
+- `matches` performs a case-insensitive regex match
+- Useful when exact casing is unknown
+
+Inspection of the matching HTTP request revealed the password:
+**clientnothere!**
+
+Q. What is the comment provided by "Client354"?
+
+Traffic related to the client was filtered using:
+`http matches client354`
+
+The HTTP payload inspection showed the following comment:
+**Nice work!**
 
