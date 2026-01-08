@@ -175,3 +175,69 @@ Traffic related to the client was filtered using:
 The HTTP payload inspection showed the following comment:
 **Nice work!**
 
+---
+
+### Identifying Hosts: DHCP, NetBIOS and Kerberos
+
+When investigating compromises or malware activity, identifying hosts and users is critical for defining the investigation scope and correlating malicious traffic. Beyond IP–MAC mappings, protocols such as DHCP, NetBIOS, and Kerberos provide valuable host and user attribution data.
+
+Enterprise environments often use predictable naming conventions for hosts and users. While this simplifies asset management, it can also be abused by attackers, making protocol-level verification essential for analysts.
+
+Protocols commonly used for host and user identification:
+- DHCP (Dynamic Host Configuration Protocol)
+- NetBIOS Name Service (NBNS)
+- Kerberos
+
+DHCP analysis focuses on extracting hostname, requested IP, and lease information from DHCP option fields. NetBIOS analysis helps identify workstation names through registration and query traffic. Kerberos analysis enables user and host identification in Windows domain environments by inspecting authentication metadata.
+
+Exercise findings (dhcp-netbios.pcap & kerberos.pcap):
+
+Q. What is the MAC address of the host "Galaxy A30"?
+
+The following display filter was used:
+`frame matches Galaxy`
+
+This filter performs a case-insensitive search across packet frames, allowing quick identification of DHCP packets containing the hostname. Inspection of the matching DHCP Request revealed the MAC address:
+
+**9a:81:41:cb:96:6c**
+
+Q. How many NetBIOS registration requests does the "LIVALJM" workstation have?
+
+The following filter was applied:
+`(nbns.name matches LIVALJM) && (nbns.flags.opcode == 5)`
+
+- `nbns.name matches LIVALJM` identifies NBNS packets related to the workstation
+- `nbns.flags.opcode == 5` filters NetBIOS name registration requests
+
+This resulted in **16 NetBIOS registration requests**.
+
+Q. Which host requested the IP address "172.16.13.85"?
+
+The DHCP request was identified using:
+`dhcp && dhcp.option.requested_ip_address == 172.16.13.85`
+
+After selecting a DHCP Request packet and inspecting the hostname option, the requesting host was identified as:
+
+**Galaxy-A12**
+
+Q. What is the IP address of the user "u5"? (defanged format)
+
+Kerberos user activity was identified using:
+`kerberos.CNameString contains "u5"`
+
+- `CNameString` represents the client principal name (user or host)
+- Values without `$` indicate user accounts
+
+Packet inspection revealed the user "u5" associated with the following IP address:
+
+**10[.]1[.]12[.]2**
+
+Q. What is the hostname of the available host in the Kerberos packets?
+
+Kerberos packets were filtered using:
+`kerberos.CNameString`
+
+Packets containing values ending with `$` were inspected, as these represent hostnames rather than user accounts. The available hostname identified was:
+
+**xp1$**
+
