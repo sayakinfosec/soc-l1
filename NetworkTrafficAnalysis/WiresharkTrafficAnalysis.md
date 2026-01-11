@@ -461,4 +461,58 @@ Adversary-controlled IP address:
 
 ---
 
+### Encrypted Protocol Analysis: Decrypting HTTPS
+
+HTTPS uses TLS to encrypt HTTP traffic, protecting data against sniffing and interception. While this improves security, it also means packet contents (URLs, headers, payloads) are unreadable without the correct decryption keys. Since attackers also rely on HTTPS to hide malicious activity, a SOC analyst must know how to decrypt TLS traffic using key log files and investigate the decrypted sessions.
+
+TLS traffic initially appears encrypted, and only handshake metadata (Client Hello / Server Hello) is visible. By supplying a valid SSL/TLS key log file generated during the capture, Wireshark can decrypt the traffic and expose HTTP/2 requests, headers, and objects for analysis.
+
+Key points for HTTPS/TLS analysis:
+- TLS handshake identifies communicating endpoints
+- Client Hello (`tls.handshake.type == 1`) and Server Hello (`tls.handshake.type == 2`) mark session initiation
+- Decryption requires a matching SSL key log file generated during capture
+- Once decrypted, HTTP/2 traffic becomes fully visible, including headers and exported objects
+
+Exercise findings (Exercise.pcap):
+
+Q. What is the frame number of the "Client Hello" message sent to "accounts.google.com"?
+
+The following filter was used to locate TLS packets containing the target hostname:
+`frame contains "accounts.google.com"`
+
+This revealed the Client Hello message sent to the domain at **frame 16**.
+
+Q. After decrypting the traffic using the provided key log file, how many HTTP/2 packets are present?
+
+Traffic was initially encrypted as TLS 1.3. Decryption was enabled by navigating to:
+Edit → Preferences → Protocols → TLS → (Pre)-Master-Secret Log Filename  
+and selecting `KeysLogFile.txt`.
+
+Once applied, previously encrypted packets were decrypted and reclassified as HTTP/2.  
+Filtering with:
+`http2`
+
+showed **115 HTTP/2 packets**, confirming successful decryption.
+
+Q. What is the authority header value in Frame 322?
+
+With the `http2` filter applied, the packet list was navigated to frame 322.  
+The HTTP/2 headers were inspected, and the `:authority` field was identified.
+
+After defanging, the authority value is:
+**safebrowsing[.]googleapis[.]com**
+
+Q. What is the hidden flag found in the decrypted traffic?
+
+After decryption, HTTP objects were reviewed via:
+File → Export Objects → HTTP
+
+The first exported object was saved and opened in a text editor.  
+The flag was found embedded in the object content:
+
+**FLAG{THM-PACKETMASTER}**
+
+---
+
+
 
