@@ -552,6 +552,44 @@ The packet containing the empty password submission is:
 
 **170**
 
+---
+
+### Bonus: Actionable Results
+
+After identifying anomalies, extracting indicators, and validating malicious behavior, the next step for a security analyst is **taking action**. Not all investigations are handed off to another team; often, the analyst must translate findings into **direct defensive controls**.
+
+Wireshark is not limited to packet inspection-it can assist in **incident response actions** by generating ready-to-use firewall rules. Using the **Tools → Firewall ACL Rules** feature, analysts can automatically create firewall rules based on selected packets. These rules are designed for **external firewall enforcement** and help quickly block malicious sources or allow trusted entities.
+
+Wireshark can generate firewall rules for:
+- Netfilter (iptables)
+- Cisco IOS (standard / extended)
+- IP Filter (ipfilter)
+- IPFirewall (ipfw)
+- Packet Filter (pf)
+- Windows Firewall (netsh – old/new format)
+
+This feature reduces response time by converting packet-level evidence into enforceable controls with minimal effort.
+
+Exercise findings (Bonus-exercise.pcap):
+
+Q. Use packet number 99. Create a rule for **IPFirewall (ipfw)**. What is the rule for denying the source IPv4 address?
+
+After selecting packet **99**, the firewall rule was generated using:
+Tools → Firewall ACL Rules → IPFirewall (ipfw)
+
+The rule generated to deny the source IPv4 address is:
+
+add deny ip from 10.121.70.151 to any in
+
+Q. Use packet number 231. Create **IPFirewall (ipfw)** rules. What is the rule for allowing the destination MAC address?
+
+After selecting packet **231**, the firewall rule was generated using:
+Tools → Firewall ACL Rules → IPFirewall (ipfw)  
+The **deny** option was unchecked to allow traffic.
+
+The rule generated to allow the destination MAC address is:
+
+add allow MAC 00:d0:59:aa:af:80 any in
 
 
 
