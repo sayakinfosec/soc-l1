@@ -514,5 +514,44 @@ The flag was found embedded in the object content:
 
 ---
 
+### Bonus: Hunt Cleartext Credentials
+
+Detecting cleartext credentials in packet captures can be challenging because malicious activity often resembles legitimate user behavior. Multiple failed logins may indicate a brute-force attempt, or simply a user mistyping credentials. Since Wireshark operates at the packet level and is not an IDS, analysts must rely on efficient methods to extract and review credential-related data.
+
+To assist with this, Wireshark includes a built-in **Credentials** feature that aggregates detected cleartext credentials into a single view. This significantly reduces investigation time by presenting usernames and passwords as a list rather than requiring packet-by-packet inspection. However, this feature only works for certain protocols and should never replace manual verification.
+
+Supported protocols for credential extraction include:
+- FTP
+- HTTP
+- IMAP
+- POP
+- SMTP
+
+This feature is available in Wireshark v3.1 and later. Analysts should treat it as a helper, not a definitive detection mechanism.
+
+Exercise findings (Bonus-exercise.pcap):
+
+Q. What is the packet number of the credentials using HTTP Basic Authentication?
+
+Detected credentials were reviewed using:
+Tools → Credentials
+
+Within the credentials window, entries using **HTTP Basic Auth** were filtered and inspected.  
+The packet number associated with the HTTP Basic Authentication credentials is:
+
+**237**
+
+Q. What is the packet number where an empty password was submitted?
+
+To identify empty password submissions, FTP password commands were filtered using:
+`ftp.request.command == "PASS"`
+
+Packets were manually inspected using the **Info** column and packet details to identify a `PASS` command with no password value supplied.
+
+The packet containing the empty password submission is:
+
+**170**
+
+
 
 
