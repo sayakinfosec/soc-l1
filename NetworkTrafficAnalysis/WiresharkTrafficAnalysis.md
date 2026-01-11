@@ -344,5 +344,121 @@ The adversary attempted to modify file permissions using the following command:
 
 **CHMOD 777 resume.doc**
 
+---
+
+### Cleartext Protocol Analysis: HTTP
+
+HTTP is a cleartext, request–response, client–server protocol and forms the backbone of web traffic. Because it is unencrypted and commonly allowed through network perimeters, HTTP traffic is frequently abused by adversaries. HTTP analysis is critical for detecting phishing pages, web attacks, data exfiltration, and command-and-control (C2) activity.
+
+HTTP traffic can be filtered using:
+http  
+http2  
+
+Common request methods observed during analysis:
+GET  
+POST  
+
+Useful request filters:
+http.request  
+http.request.method == "GET"  
+http.request.method == "POST"  
+
+HTTP response status codes help identify success, errors, and access issues:
+200 (OK) – request successful  
+301 / 302 – redirection  
+400 – bad request  
+401 – unauthorised  
+403 – forbidden  
+404 – not found  
+405 – method not allowed  
+408 – request timeout  
+500 – internal server error  
+503 – service unavailable  
+
+Response-based filters used:
+http.response.code == 200  
+http.response.code == 401  
+http.response.code == 403  
+http.response.code == 404  
+http.response.code == 405  
+http.response.code == 503  
+
+HTTP parameters are valuable for identifying targets and anomalies:
+User-Agent – client browser / tool identification  
+Request URI – requested resource  
+Full URI – complete resource path  
+Server / Host – backend service and hostname  
+
+Parameter-based filters:
+http.user_agent  
+http.user_agent contains "nmap"  
+http.request.uri contains "admin"  
+http.request.full_uri contains "admin"  
+http.server contains "apache"  
+http.host contains "keyword"  
+http.connection == "Keep-Alive"  
+data-text-lines contains "keyword"  
+
+User-Agent analysis is especially important, as attackers often attempt to mimic legitimate traffic. Indicators of anomalous or malicious user agents include:
+Different user agents from the same host in a short time
+Non-standard or custom user-agent strings
+Subtle spelling errors (typosquatting)
+Known audit or attack tools (Nmap, Nikto, sqlmap, Wfuzz)
+Encoded or payload-like data inside the user-agent field
+
+Useful hunting filters:
+(http.user_agent contains "sqlmap")  
+(http.user_agent contains "Nmap")  
+(http.user_agent contains "Wfuzz")  
+(http.user_agent contains "Nikto")  
+
+For Log4j exploitation analysis, known attack characteristics include:
+POST-based delivery
+Cleartext indicators such as "jndi" and "Exploit.class"
+Encoded payloads in headers like User-Agent
+
+Filters used for Log4j detection:
+http.request.method == "POST"  
+(frame contains "jndi")  
+(frame contains "Exploit")  
+(http.user_agent contains "$")  
+(http.user_agent contains "==")  
+
+Exercise findings (HTTP):
+
+Q. Investigate the user agents. What is the number of anomalous "user-agent" types?
+
+User-Agent was added as a column and manually reviewed across packets.
+Anomalies were identified based on non-standard values, inconsistent OS versions, and modified strings.
+A key validation question used during analysis was whether "Windows NT 6.4" legitimately exists.
+
+Total anomalous user-agent types identified:
+6
+
+Q. What is the packet number with a subtle spelling difference in the user agent field?
+
+Manual inspection revealed a typosquatted user-agent value:
+"Mozlila" instead of "Mozilla"
+
+Packet number:
+52
+
+Q. Locate the "Log4j" attack starting phase. What is the packet number?
+
+The filter `frame contains "jndi"` was used to identify the first malicious payload.
+
+Attack starting packet number:
+444
+
+Q. Locate the "Log4j" attack starting phase and decode the base64 command. What is the IP address contacted by the adversary?
+
+From packet 444, the encoded payload in the User-Agent field was extracted.
+The value was decoded using CyberChef (Base64 decoding).
+The decoded command revealed the destination IP address, which was then defanged.
+
+Adversary-controlled IP address:
+62[.]210[.]130[.]250
+
+---
 
 
