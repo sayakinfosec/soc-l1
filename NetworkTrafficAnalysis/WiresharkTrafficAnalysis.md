@@ -241,3 +241,48 @@ Packets containing values ending with `$` were inspected, as these represent hos
 
 **xp1$**
 
+---
+
+### Tunnelling Traffic: ICMP and DNS
+
+Traffic tunnelling hides data inside legitimate protocols to move information across network boundaries. While commonly used by enterprises for secure communication, attackers abuse trusted protocols like ICMP and DNS for data exfiltration and command-and-control (C2) communication to bypass security controls.
+
+Because these protocols are routinely allowed through network perimeters, detecting tunnelling requires identifying anomalies rather than relying on simple allow/deny logic.
+
+ICMP tunnelling abuses the ICMP payload field to encapsulate other protocols such as SSH, TCP, or HTTP. DNS tunnelling abuses long or abnormal DNS queries, often encoding data inside subdomain labels.
+
+ICMP tunnelling indicators include:
+- High volume of ICMP traffic
+- Abnormal or consistent packet sizes
+- Encapsulated protocol data inside ICMP payloads
+
+DNS tunnelling indicators include:
+- Excessively long DNS query names
+- Encoded or random-looking subdomains
+- Repeated queries to a single domain
+- Known tunnelling tools (e.g., dnscat, dns2tcp)
+
+Exercise findings (icmp-tunnel.pcap & dns.pcap):
+
+Q. Which protocol is used in the ICMP tunnelling activity?
+
+ICMP packets with unusually large payloads were isolated using:
+`data.len > 64 and icmp`
+
+- Normal ICMP echo requests are typically 64 bytes
+- Larger payloads indicate possible data encapsulation
+
+Inspection of the ICMP payload revealed encapsulated **SSH** traffic, confirming ICMP-based tunnelling.
+
+Q. What is the suspicious main domain receiving anomalous DNS queries? (defanged format)
+
+DNS tunnelling activity was isolated using:
+`dns.qry.name.len > 15 and !mdns`
+
+- Long query names indicate encoded subdomain data
+- `!mdns` removes local multicast DNS noise
+
+Analysis showed repeated anomalous DNS queries targeting the following domain:
+
+**dataexfil[.]com**
+
