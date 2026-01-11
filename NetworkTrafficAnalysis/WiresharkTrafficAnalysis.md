@@ -286,3 +286,63 @@ Analysis showed repeated anomalous DNS queries targeting the following domain:
 
 **dataexfil[.]com**
 
+---
+
+### Cleartext Protocol Analysis: FTP
+
+Cleartext protocol analysis becomes challenging at scale. While credentials and commands are readable, a SOC analyst must extract statistics, identify abuse patterns, and summarize attacker behavior rather than simply following streams.
+
+FTP prioritizes simplicity over security and transmits credentials and commands in cleartext, making it highly vulnerable to interception and abuse. Common risks include credential theft, brute-force attacks, malware uploads, and data exfiltration.
+
+FTP investigation relies on correlating response codes, commands, and file-transfer activity to identify attacker intent.
+
+Key FTP indicators:
+- Authentication attempts (success and failure)
+- File access and transfer activity
+- Permission modification commands
+- Repeated failed logins indicating brute-force behavior
+
+Exercise findings (ftp.pcap):
+
+Q. How many incorrect login attempts are there?
+
+Incorrect login attempts were identified using:
+`ftp && ftp.response.arg == "Login incorrect."`
+
+- `ftp` limits traffic to FTP protocol
+- `ftp.response.arg == "Login incorrect."` directly matches failed authentication responses returned by the server
+
+This filter revealed **737 incorrect login attempts**, indicating brute-force activity.
+
+Q. What is the size of the file accessed by the "ftp" account?
+
+FTP activity related to the "ftp" account was identified using:
+`ftp contains "ftp"`
+
+After locating the first `USER ftp` command, the packet was right-clicked and filtered using:
+**Conversation Filter → TCP**
+
+This isolated the full FTP session for that user. Scrolling through the conversation revealed a file transfer where the server response contained:
+
+`Response arg: 39424`
+
+This indicates the accessed file size was **39424 bytes**.
+
+Q. What is the filename uploaded by the adversary?
+
+The uploaded filename was identified during the same TCP conversation filtered in the previous step.
+
+Inspection of the FTP commands within the session revealed the uploaded file:
+
+**resume.doc**
+
+Q. What command was used to change the execution permissions of the uploaded file?
+
+Post-upload FTP commands were reviewed by continuing to scroll through the same TCP conversation.
+
+The adversary attempted to modify file permissions using the following command:
+
+**CHMOD 777 resume.doc**
+
+
+
