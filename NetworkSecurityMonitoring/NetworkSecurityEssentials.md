@@ -257,3 +257,79 @@ Confirmed brute-force attack against VPN authentication.
 * IDS context adds significant investigative value
 * Perimeter monitoring enables early attack detection
 
+---
+
+### Perimeter Logs – Investigating the Breach
+
+**Incident Scenario**  
+Initech Corp, a mid-sized financial services company, deployed a new firewall and IDS to monitor its network perimeter. Over a one-month period, abnormal traffic patterns were observed but not deeply investigated due to SOC workload. The task was to analyze one month of perimeter logs to identify adversary techniques and determine whether the perimeter was breached.
+
+The analysis was performed using firewall logs, IDS alerts, and VPN authentication logs, with reference to known internal network assets.
+
+**Log Sources Reviewed**
+- Firewall Logs (`firewall.log`)
+- IDS / WAF Logs (`ids_alerts.log`)
+- VPN Authentication Logs (`vpn_auth.log`)
+
+**Reconnaissance Activity**  
+Analysis of blocked firewall traffic showed an external IP probing multiple internal hosts across several ports, including SSH (22), Telnet (23), FTP (21), SMB (445), and RDP (3389). This behavior is consistent with active reconnaissance and port scanning.
+
+Further aggregation of blocked events revealed one external IP responsible for the highest number of blocked connection attempts, confirming focused reconnaissance activity.
+
+**Question:** What external IP performed the most reconnaissance?  
+**Answer:** 203.0.113.45
+
+**Question:** Which internal host was primarily targeted by scans?  
+**Answer:** 10.0.0.20
+
+**Initial Access – VPN Credential Abuse**  
+VPN authentication logs revealed a high number of failed login attempts against a specific service account, followed by successful authentication events. This indicates brute-force or credential stuffing activity resulting in valid credential compromise.
+
+After successful authentication, the attacker was assigned an internal VPN IP address, confirming perimeter breach and internal access.
+
+**Question:** Which username was targeted in the VPN logs?  
+**Answer:** svc_backup
+
+**Question:** What internal IP was assigned after successful VPN login?  
+**Answer:** 10.8.0.23
+
+**Lateral Movement**  
+Post-compromise firewall logs showed the assigned internal IP initiating connections to multiple internal systems. These connections targeted critical services including SSH (22), SMB (445), and RDP (3389).
+
+IDS alerts correlated with this activity flagged SSH scans, SMB exploitation attempts, and RDP brute-force attempts, confirming active lateral movement within the internal network.
+
+**Question:** Which port was used for lateral SMB attempts?  
+**Answer:** 445
+
+**Command and Control (C2) Beaconing**  
+IDS logs contained repeated alerts indicating possible C2 beaconing behavior. These alerts showed regular outbound connections from a compromised internal host to an external IP over a non-standard port, a strong indicator of malware persistence and remote control.
+
+**Question:** In the IDS logs, which host was beaconing to the C2 server?  
+**Answer:** 10.0.0.60
+
+**Question:** Which external IP was associated with C2 activity?  
+**Answer:** 198.51.100.77
+
+**Data Exfiltration Attempts**  
+Firewall logs showed large volumes of outbound traffic from a compromised internal host to external destinations over HTTP and alternate web ports. Corresponding IDS alerts flagged these events as large HTTP POST uploads, indicating potential data exfiltration.
+
+**Question:** Which host showed evidence of data exfiltration attempts?  
+**Answer:** 10.0.0.51
+
+---
+
+### Conclusion
+
+In this room, we learned that an enterprise network is not just a collection of computers and servers, but an interconnected ecosystem consisting of firewalls, authentication systems, application servers, file and database servers, and endpoints.
+
+The network perimeter represents the boundary between trusted and untrusted networks and is continuously tested by attackers through scanning, brute-force attempts, and service exploitation.
+
+From a SOC analyst perspective, effective perimeter monitoring enables:
+- Early detection of reconnaissance and credential abuse
+- Identification of lateral movement and internal exploitation
+- Detection of C2 communication and data exfiltration attempts
+
+The role of a security analyst is to recognize suspicious patterns, correlate events across multiple log sources, and escalate confirmed threats before attackers can cause significant damage to the organization.
+
+
+
